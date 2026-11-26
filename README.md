@@ -2,9 +2,15 @@
 
 **Turn a scene script into a narrated `.mp4`.** Every frame is vector graphics drawn by code (shapes, arrows, text, code panels), and the voiceover is generated offline with [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), a natural-sounding neural voice, or your computer's built-in text-to-speech. No images, no stock footage, no cloud services.
 
-![A frame from the binary search example](docs/preview.png)
+## Sample: MCP explained in 90 seconds
+
+[![MCP explainer, narrated with the Kokoro voice. Click to watch.](docs/mcp-explainer.png)](docs/mcp-explainer.mp4)
+
+▶ **[Watch the sample](docs/mcp-explainer.mp4)** (91 s, Kokoro voice `af_heart`, captions on). Every frame is drawn from [one scene script](skills/vector-video/examples/mcp-explainer.js): no images, no video editor, no recording.
 
 Good for algorithm walkthroughs, bug explainers, architecture diagrams that build up step by step, and short product intros.
+
+![A frame from the binary search example](docs/preview.png)
 
 ## How it works
 
@@ -81,6 +87,7 @@ node scripts/render.js <scene.json|scene.js> [out.mp4] [options]
 | [`hello.json`](skills/vector-video/examples/hello.json) | The smallest possible scene: a title, a moving circle, an arrow |
 | [`binary-search.js`](skills/vector-video/examples/binary-search.js) | An algorithm walkthrough with an array, pointers and a code panel |
 | [`strstr.js`](skills/vector-video/examples/strstr.js) | A bug explainer: why a naive substring search fails, then the fix |
+| [`mcp-explainer.js`](skills/vector-video/examples/mcp-explainer.js) | The sample above: a 6-scene concept explainer with diagrams, a sequence chart and a JSON code panel |
 
 ## Tips
 
