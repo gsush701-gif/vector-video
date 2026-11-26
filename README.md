@@ -4,9 +4,9 @@
 
 ## Sample: MCP explained in 90 seconds
 
-[![MCP explainer, narrated with the Kokoro voice. Click to watch.](docs/mcp-explainer.png)](docs/mcp-explainer.mp4)
+https://github.com/user-attachments/assets/85f0afe9-33af-497e-999e-afe8a9d17584
 
-▶ **[Watch the sample](docs/mcp-explainer.mp4)** (91 s, Kokoro voice `af_heart`, captions on). Every frame is drawn from [one scene script](skills/vector-video/examples/mcp-explainer.js): no images, no video editor, no recording.
+91 seconds, Kokoro voice `af_heart`, captions on. Every frame is drawn from [one scene script](skills/vector-video/examples/mcp-explainer.js): no images, no video editor, no recording. ([Download the .mp4](docs/mcp-explainer.mp4))
 
 Good for algorithm walkthroughs, bug explainers, architecture diagrams that build up step by step, and short product intros.
 
