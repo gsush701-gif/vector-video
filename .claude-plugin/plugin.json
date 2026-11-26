@@ -1,0 +1,12 @@
+{
+  "name": "vector-video",
+  "version": "1.0.0",
+  "description": "Make a real narrated video file (.mp4) where every visual is vector graphics drawn by code (SVG shapes, paths, text, code panels), with offline text-to-speech narration. Use when the user asks for a video, an animated explainer, a walkthrough video of an algorithm or bug, an animation, or an .mp4. No images, photos or downloads are used.",
+  "author": {
+    "name": "Sushil Gautam"
+  },
+  "keywords": ["video", "mp4", "svg", "animation", "explainer", "text-to-speech", "narration"],
+  "license": "MIT",
+  "homepage": "https://github.com/gsush701-gif/vector-video",
+  "repository": "https://github.com/gsush701-gif/vector-video"
+}

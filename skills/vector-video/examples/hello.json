@@ -1,0 +1,14 @@
+{
+  "width": 1280, "height": 720, "fps": 30,
+  "scenes": [
+    {
+      "narration": ["Hi! This whole video is drawn with shapes and text.", {"say": "Watch the circle move.", "cue": "move"}],
+      "elements": [
+        { "type": "text", "text": "Hello, vector video", "x": 640, "y": 200, "size": 64, "align": "center", "bold": true, "appear": {"t": 0.2, "effect": "type"} },
+        { "type": "circle", "cx": 300, "cy": 450, "r": 50, "fill": "#38bdf8", "appear": {"t": 0.8, "effect": "pop"},
+          "keyframes": [ { "t": "@move", "dur": 1.2, "cx": 980, "fill": "#22c55e" } ] },
+        { "type": "arrow", "x1": 300, "y1": 580, "x2": 980, "y2": 580, "color": "#facc15", "appear": {"t": "@move", "effect": "draw", "dur": 1.2} }
+      ]
+    }
+  ]
+}
