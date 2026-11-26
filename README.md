@@ -2,6 +2,14 @@
 
 **Turn a scene script into a narrated `.mp4`.** Every frame is vector graphics drawn by code (shapes, arrows, text, code panels), and the voiceover is generated offline with [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), a natural-sounding neural voice, or your computer's built-in text-to-speech. No images, no stock footage, no cloud services.
 
+As a plugin, you just describe the video you want: your AI agent writes the scene script, checks its timing and layout, and renders it. You can also write or edit scripts yourself and run the renderer directly.
+
+## Tour: vector-video, explained by vector-video
+
+https://github.com/user-attachments/assets/fb78feb9-128d-4d6c-a0ff-a9344ed1e8cb
+
+How it works, in 2 minutes: the request-to-video flow, the scene script, the render pipeline, narration-driven timing and the toolkit. Made with the plugin itself from [this script](skills/vector-video/examples/plugin-tour.js). ([Download the .mp4](docs/plugin-tour.mp4))
+
 ## Sample: MCP explained in 90 seconds
 
 https://github.com/user-attachments/assets/85f0afe9-33af-497e-999e-afe8a9d17584
@@ -88,6 +96,7 @@ node scripts/render.js <scene.json|scene.js> [out.mp4] [options]
 | [`binary-search.js`](skills/vector-video/examples/binary-search.js) | An algorithm walkthrough with an array, pointers and a code panel |
 | [`strstr.js`](skills/vector-video/examples/strstr.js) | A bug explainer: why a naive substring search fails, then the fix |
 | [`mcp-explainer.js`](skills/vector-video/examples/mcp-explainer.js) | The sample above: a 6-scene concept explainer with diagrams, a sequence chart and a JSON code panel |
+| [`plugin-tour.js`](skills/vector-video/examples/plugin-tour.js) | The tour above: the plugin explaining itself, with a pipeline, a timing diagram and a toolkit showcase |
 
 ## Tips
 
