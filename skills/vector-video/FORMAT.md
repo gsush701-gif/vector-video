@@ -9,8 +9,9 @@ module.exports = {
   color: '#e2e8f0',                       // default text color
   font: 'Segoe UI', mono: 'Consolas',     // font families (Windows fonts are loaded automatically)
   fonts: [],                              // extra .ttf/.otf files to load
-  voice: 'Microsoft Zira Desktop',        // optional; system default if left out
-  rate: 1,                                // speech speed, -10 .. 10
+  tts: 'auto',                            // 'auto' (Kokoro if installed), 'kokoro' or 'system'
+  voice: 'af_heart',                      // Kokoro voice, or a system voice like 'Microsoft Zira Desktop'
+  rate: 0,                                // speech speed, -10 .. 10 (Kokoro: 0 = normal, 2 = 20% faster)
   leadIn: 0.4, gap: 0.3, tail: 0.7,       // silence before first line, between lines, after last line (s)
   fade: 0.25,                             // fade in/out of each scene (s); 0 = hard cut
   captions: true,                         // or { size, color, background, backgroundOpacity, y }
@@ -104,6 +105,17 @@ Every element can have:
 }
 ```
 
+## Voices
+
+Two speech engines, both offline:
+
+- **Kokoro** (neural, natural-sounding). Installed by `npm install` as an optional package. The first run downloads its model once (~92 MB) into `~/.cache/vector-video/models` (change with `VV_MODELS_DIR`). Voices: `af_heart` (US female, best), `af_bella`, `af_nicole`, `am_michael`, `am_fenrir`, `am_puck` (US male), `bf_emma`, `bm_george`, `bm_fable` (UK). Prefix: `a` = US, `b` = UK, then `f`/`m`.
+- **System**: Windows speech voices, `say` on macOS, `espeak-ng` on Linux.
+
+With `tts: 'auto'` the renderer uses Kokoro when it is installed and can load, and otherwise falls back to the system voice with a warning. A system voice name (`Microsoft ...`) given to Kokoro is replaced by `af_heart`.
+
+If huggingface.co is blocked on your network, download `config.json`, `tokenizer.json`, `tokenizer_config.json` and `onnx/model_quantized.onnx` from `onnx-community/Kokoro-82M-v1.0-ONNX` and put them in `~/.cache/vector-video/models/onnx-community/Kokoro-82M-v1.0-ONNX/` (keeping the `onnx/` folder).
+
 ## Command line
 
 ```
@@ -114,6 +126,7 @@ node <SKILL_DIR>/scripts/render.js <scene.json|scene.js> [out.mp4] [options]
   --video            with --stills, also render the video
   --no-audio         no speech (lengths guessed from word count) - quick drafts
   --scale 0.5        render smaller, for fast drafts
+  --tts <engine>     auto | kokoro | system (overrides the scene file)
 ```
 
 Speech audio is cached in the system temp folder (`vector-video-cache`), so re-renders after visual changes are fast.

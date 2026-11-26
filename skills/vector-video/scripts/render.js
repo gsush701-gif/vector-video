@@ -15,6 +15,7 @@
  *   --no-audio        Skip speech. Scene lengths are guessed from word counts.
  *   --scale <n>       Render at n times the size (e.g. 0.5 for a fast draft).
  *   --timeline        Only print the scene/cue timing table.
+ *   --tts <engine>    Speech engine: auto (default), kokoro or system. Overrides "tts" in the scene file.
  */
 const fs = require('fs');
 const os = require('os');
@@ -33,7 +34,7 @@ function need(mod) {
 
 // ---------------------------------------------------------------- args
 function parseArgs(argv) {
-  const a = { positional: [], stills: null, stillsDir: null, video: false, audio: true, scale: 1, timeline: false };
+  const a = { positional: [], stills: null, stillsDir: null, video: false, audio: true, scale: 1, timeline: false, tts: null };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--stills') a.stills = argv[++i];
@@ -42,6 +43,7 @@ function parseArgs(argv) {
     else if (v === '--no-audio') a.audio = false;
     else if (v === '--scale') a.scale = parseFloat(argv[++i]);
     else if (v === '--timeline') a.timeline = true;
+    else if (v === '--tts') a.tts = argv[++i];
     else if (v === '-h' || v === '--help') { a.help = true; }
     else a.positional.push(v);
   }
@@ -63,7 +65,7 @@ function loadSpec(file) {
   return Object.assign({
     width: 1280, height: 720, fps: 30, background: '#0f172a',
     font: 'Segoe UI', mono: 'Consolas', color: '#e2e8f0',
-    voice: null, rate: 0, leadIn: 0.4, gap: 0.3, tail: 0.7, fade: 0.25,
+    tts: 'auto', voice: null, rate: 0, leadIn: 0.4, gap: 0.3, tail: 0.7, fade: 0.25,
     overlay: [], fonts: [],
   }, spec);
 }
@@ -139,8 +141,64 @@ function synthesize(jobs, ffmpegPath) {
   return true;
 }
 
+// ---------------------------------------------------------------- kokoro (neural, offline)
+const KOKORO_MODEL = 'onnx-community/Kokoro-82M-v1.0-ONNX';
+const KOKORO_DEFAULT_VOICE = 'af_heart';
+// Model files live here (downloaded once, then used offline). Override with VV_MODELS_DIR.
+const MODELS_DIR = process.env.VV_MODELS_DIR || path.join(os.homedir(), '.cache', 'vector-video', 'models');
+let kokoroPromise = null;
+
+function kokoroInstalled() {
+  try { require.resolve('kokoro-js'); return true; } catch { return false; }
+}
+
+function loadKokoro() {
+  if (!kokoroPromise) kokoroPromise = (async () => {
+    const { env } = await import('@huggingface/transformers');
+    env.localModelPath = MODELS_DIR + path.sep;
+    env.cacheDir = MODELS_DIR + path.sep;
+    const { KokoroTTS } = await import('kokoro-js');
+    const local = fs.existsSync(path.join(MODELS_DIR, KOKORO_MODEL, 'onnx', 'model_quantized.onnx'));
+    if (!local) console.log(`Downloading the Kokoro voice model once (~92 MB) into ${MODELS_DIR} ...`);
+    return KokoroTTS.from_pretrained(KOKORO_MODEL, { dtype: 'q8', device: 'cpu' });
+  })();
+  return kokoroPromise;
+}
+
+async function synthesizeKokoro(jobs, ffmpegPath) {
+  const tts = await loadKokoro();
+  let i = 0;
+  for (const j of jobs) {
+    const audio = await tts.generate(j.text, { voice: j.voice, speed: Math.max(0.5, Math.min(2, 1 + (j.rate || 0) / 10)) });
+    const tmp = j.out + '.raw.wav';
+    await audio.save(tmp);
+    // Kokoro can peak at full scale; leave ~1.5 dB of headroom so the mix never clips.
+    const c = spawnSync(ffmpegPath, ['-y', '-loglevel', 'error', '-i', tmp, '-af', 'alimiter=limit=0.84:level=false', '-ar', String(RATE), '-ac', '1', '-c:a', 'pcm_s16le', j.out]);
+    fs.rmSync(tmp, { force: true });
+    if (c.status !== 0) throw new Error('Audio convert failed: ' + String(c.stderr));
+    process.stdout.write(`\r  ${++i}/${jobs.length}`);
+  }
+  if (jobs.length) process.stdout.write('\n');
+}
+
+// Picks the engine: "kokoro" (neural), "system" (Windows / macOS / espeak voices) or "auto" (kokoro when installed).
+async function pickEngine(spec, opts) {
+  const want = String(opts.tts || spec.tts || 'auto').toLowerCase();
+  if (want === 'system') return 'system';
+  if (!kokoroInstalled()) {
+    if (want === 'kokoro') console.warn(`Kokoro is not installed (cd "${ROOT}" && npm install kokoro-js). Using the system voice.`);
+    return 'system';
+  }
+  try { await loadKokoro(); return 'kokoro'; } catch (e) {
+    console.warn(`Kokoro could not load (${e.message.split('\n')[0]}). Using the system voice.\n` +
+      `  If huggingface.co is blocked here, put the model files in ${path.join(MODELS_DIR, KOKORO_MODEL)}`);
+    kokoroPromise = null;
+    return 'system';
+  }
+}
+
 // ---------------------------------------------------------------- timing
-function buildTimeline(spec, opts, ffmpegPath) {
+async function buildTimeline(spec, opts, ffmpegPath) {
   const cacheDir = path.join(os.tmpdir(), 'vector-video-cache');
   fs.mkdirSync(cacheDir, { recursive: true });
   const all = [];
@@ -148,15 +206,23 @@ function buildTimeline(spec, opts, ffmpegPath) {
 
   const jobs = [];
   if (opts.audio) {
+    const engine = await pickEngine(spec, opts);
+    let warned = false;
     for (const { g, scene } of all) {
       if (!g.say || !String(g.say).trim()) continue;
-      const voice = g.voice || scene.voice || spec.voice || null;
+      let voice = g.voice || scene.voice || spec.voice || null;
+      if (engine === 'kokoro' && !/^[a-z]{2}_[a-z]+$/.test(voice || '')) {
+        if (voice && !warned) { console.warn(`"${voice}" is not a Kokoro voice; using ${KOKORO_DEFAULT_VOICE}. Kokoro voices look like af_heart, am_michael, bf_emma.`); warned = true; }
+        voice = KOKORO_DEFAULT_VOICE;
+      }
       const rate = g.rate ?? scene.rate ?? spec.rate ?? 0;
-      g._wav = path.join(cacheDir, hash([process.platform, voice, rate, g.say].join('|')) + '.wav');
+      const key = engine === 'kokoro' ? ['kokoro', voice, rate, g.say] : [process.platform, voice, rate, g.say];
+      g._wav = path.join(cacheDir, hash(key.join('|')) + '.wav');
       if (!fs.existsSync(g._wav) && !jobs.some((j) => j.out === g._wav)) jobs.push({ text: String(g.say), out: g._wav, voice, rate });
     }
-    if (jobs.length) console.log(`Speaking ${jobs.length} narration line(s)...`);
-    if (synthesize(jobs, ffmpegPath) === false) {
+    if (jobs.length) console.log(`Speaking ${jobs.length} narration line(s) with ${engine === 'kokoro' ? 'Kokoro' : 'the system voice'}...`);
+    if (engine === 'kokoro') await synthesizeKokoro(jobs, ffmpegPath);
+    else if (synthesize(jobs, ffmpegPath) === false) {
       console.warn('No speech engine found (install espeak-ng on Linux). Making the video WITHOUT a voice; scene lengths are guessed from word counts.');
       for (const { g } of all) delete g._wav;
     }
@@ -503,7 +569,7 @@ function printTimeline(spec) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || !args.positional.length) {
-    console.log('Usage: node render.js <scene.json|scene.js> [out.mp4] [--stills 3,2@1.5] [--video] [--no-audio] [--scale 0.5] [--timeline]');
+    console.log('Usage: node render.js <scene.json|scene.js> [out.mp4] [--stills 3,2@1.5] [--video] [--no-audio] [--scale 0.5] [--timeline] [--tts auto|kokoro|system]');
     process.exit(args.help ? 0 : 1);
   }
   const { Resvg } = need('@resvg/resvg-js');
@@ -512,7 +578,7 @@ async function main() {
   const out = path.resolve(args.positional[1] || specFile.replace(/\.(json|c?js)$/i, '') + '.mp4');
   const spec = loadSpec(specFile);
 
-  buildTimeline(spec, args, ffmpegPath);
+  await buildTimeline(spec, args, ffmpegPath);
   spec._overlayScene = { _dur: spec._total, _segs: [] };
   printTimeline(spec);
   if (args.timeline) return;

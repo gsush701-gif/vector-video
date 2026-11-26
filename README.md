@@ -1,6 +1,6 @@
 # vector-video
 
-**Turn a scene script into a narrated `.mp4`.** Every frame is vector graphics drawn by code (shapes, arrows, text, code panels), and the voiceover is generated offline with your computer's built-in text-to-speech. No images, no stock footage, no cloud services.
+**Turn a scene script into a narrated `.mp4`.** Every frame is vector graphics drawn by code (shapes, arrows, text, code panels), and the voiceover is generated offline with [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), a natural-sounding neural voice, or your computer's built-in text-to-speech. No images, no stock footage, no cloud services.
 
 ![A frame from the binary search example](docs/preview.png)
 
@@ -37,7 +37,8 @@ Good for algorithm walkthroughs, bug explainers, architecture diagrams that buil
 - **Effects**: fade, pop, slide up, typewriter text, self-drawing lines and paths, plus keyframes for position, color, scale, rotation and more.
 - **Captions**: optional subtitles from the narration, with separate spoken and shown text (`say` / `caption`).
 - **Fast iteration**: `--timeline` prints when every line is spoken, `--stills` saves PNG previews, and speech is cached so visual re-renders take seconds.
-- **Offline voices**: Windows speech voices (no install), `say` on macOS, `espeak-ng` on Linux.
+- **Natural offline voice**: [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) (Apache-2.0) runs on your CPU, with US and UK voices like `af_heart`, `am_michael` and `bf_emma`. The model downloads once (~92 MB).
+- **Fallback voices**: Windows speech voices (no install), `say` on macOS, `espeak-ng` on Linux. Used automatically when Kokoro is unavailable, or with `--tts system`.
 
 Full reference: [skills/vector-video/FORMAT.md](skills/vector-video/FORMAT.md).
 
@@ -54,11 +55,11 @@ Then ask for a video, for example "make a 45 second explainer of how binary sear
 ```bash
 git clone https://github.com/gsush701-gif/vector-video
 cd vector-video/skills/vector-video
-npm install                                          # resvg + ffmpeg + ffprobe
+npm install                                          # resvg + ffmpeg + Kokoro voice
 node scripts/render.js examples/hello.json hello.mp4
 ```
 
-Requires Node 18+.
+Requires Node 18+. The full install is about 830 MB because of Kokoro's ONNX runtime; skip it with `npm install --omit=optional` to use only the system voices.
 
 ## Command line
 
@@ -70,6 +71,7 @@ node scripts/render.js <scene.json|scene.js> [out.mp4] [options]
   --video            with --stills, also render the video
   --no-audio         skip speech (lengths guessed from word count) for quick drafts
   --scale 0.5        render smaller, for fast drafts
+  --tts <engine>     auto (default) | kokoro | system
 ```
 
 ## Examples

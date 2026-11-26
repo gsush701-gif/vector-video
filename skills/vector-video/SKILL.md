@@ -17,9 +17,9 @@ Every visual must be vector: shapes, lines, arrows, paths, text and code. Never 
 - Full scene format: `<SKILL_DIR>/FORMAT.md` (read it before writing your first scene file)
 - Worked examples: `<SKILL_DIR>/examples/strstr.js` (a LeetCode bug explainer), `<SKILL_DIR>/examples/binary-search.js` (an algorithm walkthrough), `<SKILL_DIR>/examples/hello.json` (tiny)
 
-**First run:** if `<SKILL_DIR>/node_modules` is missing, run `npm install` inside `SKILL_DIR` once (needs Node 18+ and internet). It installs the SVG rasterizer and ffmpeg.
+**First run:** if `<SKILL_DIR>/node_modules` is missing, run `npm install` inside `SKILL_DIR` once (needs Node 18+ and internet). It installs the SVG rasterizer, ffmpeg and the Kokoro neural voice (optional; ~830 MB of packages). Kokoro downloads its model once (~92 MB) on first use.
 
-**Voice:** Windows uses its built-in voices (no install). macOS uses `say`. Linux uses `espeak-ng` if installed; if no speech engine exists, the video is still made, without a voice (the renderer prints a warning; tell the user).
+**Voice:** by default (`tts: 'auto'`) narration uses **Kokoro**, a natural-sounding neural voice that runs offline; set `voice: 'af_heart'` (or `am_michael`, `bf_emma`, ...). If Kokoro is not installed or its model cannot be downloaded, the renderer falls back to the system voice (Windows built-in voices, `say` on macOS, `espeak-ng` on Linux) and prints a warning; tell the user. If no speech engine exists at all, the video is made without a voice.
 
 ## Steps
 
@@ -39,7 +39,8 @@ Every visual must be vector: shapes, lines, arrows, paths, text and code. Never 
 - Speech engines read a lone letter "a" as "uh". Say "the first letters match" instead of "a matches a". Write numbers as digits; write "-1" as "minus 1".
 - Avoid code symbols in narration (`[i+j]`, `!=`, `++`). Say what they mean instead.
 - Set `"captions": true` to show the narration as subtitles at the bottom (keep the bottom ~80 px free).
-- On Windows the voices are usually "Microsoft Zira Desktop" (US, female), "Microsoft David Desktop" (US, male) and "Microsoft Hazel Desktop" (UK). `rate` goes from -10 to 10; 1 or 2 sounds natural. Windows voice names are ignored on other systems.
+- Kokoro voices: `af_heart` (US female, the best), `am_michael` / `am_fenrir` (US male), `bf_emma` / `bm_george` (UK). `rate` goes from -10 to 10; 0 is natural for Kokoro. System voices on Windows are usually "Microsoft Zira Desktop", "Microsoft David Desktop" and "Microsoft Hazel Desktop" (used with `tts: 'system'`).
+- Kokoro takes about 0.7 seconds per second of speech on a laptop CPU. Speech is cached, so re-renders after visual changes are fast.
 
 ## Layout tips
 
