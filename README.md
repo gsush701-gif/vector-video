@@ -1,8 +1,13 @@
 # vector-video
 
+[![Latest release](https://img.shields.io/github/v/release/gsush701-gif/vector-video)](https://github.com/gsush701-gif/vector-video/releases/latest)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+
 **Turn a scene script into a narrated `.mp4`.** Every frame is vector graphics drawn by code (shapes, arrows, text, code panels), and the voiceover is generated offline with [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), a natural-sounding neural voice, or your computer's built-in text-to-speech. No images, no stock footage, no cloud services.
 
 As a plugin, you just describe the video you want: your AI agent writes the scene script, checks its timing and layout, and renders it. You can also write or edit scripts yourself and run the renderer directly.
+
+**[⬇ Download the latest release](https://github.com/gsush701-gif/vector-video/releases/latest)**, or see [Install](#install) below.
 
 ## Tour: vector-video, explained by vector-video
 
@@ -59,12 +64,17 @@ Full reference: [skills/vector-video/FORMAT.md](skills/vector-video/FORMAT.md).
 
 ## Install
 
-### As a plugin
+### Claude Code
 ```
 /plugin marketplace add gsush701-gif/vector-video
 /plugin install vector-video@vector-video
 ```
 Then ask for a video, for example "make a 45 second explainer of how binary search works". The skill instructions are in [skills/vector-video/SKILL.md](skills/vector-video/SKILL.md).
+
+### Claude desktop app or claude.ai
+1. Open the [latest release](https://github.com/gsush701-gif/vector-video/releases/latest) and download `vector-video-skill-<version>.zip` under **Assets**.
+2. In Claude, upload it as a skill (**Settings → Capabilities → Skills**).
+3. Ask for a video. On first use the agent runs `npm install`, which needs Node 18+.
 
 ### Standalone CLI
 ```bash
@@ -73,6 +83,8 @@ cd vector-video/skills/vector-video
 npm install                                          # resvg + ffmpeg + Kokoro voice
 node scripts/render.js examples/hello.json hello.mp4
 ```
+
+Or download **Source code (zip)** from the [latest release](https://github.com/gsush701-gif/vector-video/releases/latest) instead of cloning.
 
 Requires Node 18+. The full install is about 830 MB because of Kokoro's ONNX runtime; skip it with `npm install --omit=optional` to use only the system voices.
 
