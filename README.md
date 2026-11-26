@@ -6,9 +6,9 @@ As a plugin, you just describe the video you want: your AI agent writes the scen
 
 ## Tour: vector-video, explained by vector-video
 
-https://github.com/user-attachments/assets/fb78feb9-128d-4d6c-a0ff-a9344ed1e8cb
+https://github.com/user-attachments/assets/f1e6f194-7371-4a75-b675-c47ab7d41e79
 
-How it works, in 2 minutes: the request-to-video flow, the scene script, the render pipeline, narration-driven timing and the toolkit. Made with the plugin itself from [this script](skills/vector-video/examples/plugin-tour.js). ([Download the .mp4](docs/plugin-tour.mp4))
+In the light theme. How it works, in 2 minutes: the request-to-video flow, the scene script, the render pipeline, narration-driven timing and the toolkit. Made with the plugin itself from [this script](skills/vector-video/examples/plugin-tour.js). ([Download the .mp4](docs/plugin-tour.mp4))
 
 ## Sample: MCP explained in 90 seconds
 
