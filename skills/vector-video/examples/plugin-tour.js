@@ -1,11 +1,8 @@
 // A tour of vector-video, made with vector-video.
-// Render with:  node scripts/render.js examples/plugin-tour.js plugin-tour.mp4
+// Render with:  node scripts/render.js examples/plugin-tour.js plugin-tour.mp4 [--theme light]
+// Exports a function so its colors follow the theme the renderer passes in.
 
-const C = {
-  text: '#e2e8f0', dim: '#94a3b8', panel: '#1e293b', deep: '#111c33', line: '#334155',
-  brand: '#818cf8', violet: '#a78bfa', green: '#22c55e', greenFill: '#14532d',
-  red: '#ef4444', yellow: '#facc15', blue: '#60a5fa', orange: '#fb923c',
-};
+let C; // set from the renderer's palette below
 
 const title = (text, t = 0.2) => ({ type: 'text', text, x: 640, y: 80, size: 38, bold: true, align: 'center', appear: { t, effect: 'up' } });
 
@@ -21,7 +18,7 @@ function card(x, y, w, h, head, sub, color, t) {
 }
 
 // ---------- scene 3: the five pipeline stages
-const stages = [
+const stageList = () => [
   { head: 'Speak', sub: 'Kokoro voice', color: C.violet, cue: '@speak' },
   { head: 'Time', sub: 'measure lines', color: C.blue, cue: '@time' },
   { head: 'Draw', sub: 'SVG frames', color: C.green, cue: '@draw' },
@@ -31,6 +28,7 @@ const stages = [
 const SX = (i) => 40 + i * 250;
 
 function pipeline() {
+  const stages = stageList();
   const out = [];
   stages.forEach((s, i) => {
     out.push(card(SX(i), 300, 200, 90, s.head, s.sub, s.color, s.cue));
@@ -45,7 +43,17 @@ function pipeline() {
 // ---------- scene 4: timeline of spoken lines
 const AX = 120, AY = 470;
 
-module.exports = {
+module.exports = ({ theme = 'dark', palette } = {}) => {
+  const light = theme === 'light';
+  C = Object.assign({
+    text: '#e2e8f0', dim: '#94a3b8', panel: '#1e293b', line: '#334155', brand: '#818cf8', brandFill: '#312e81',
+    violet: '#a78bfa', green: '#22c55e', greenFill: '#14532d', red: '#ef4444', yellow: '#facc15', blue: '#60a5fa', orange: '#fb923c',
+  }, palette, {
+    barFill: light ? '#dbeafe' : '#1e3a5f',
+    orangeFill: light ? '#ffedd5' : '#7c2d12',
+    play: light ? '#ffffff' : '#e2e8f0',
+  });
+  return {
   voice: 'af_heart',
   rate: 1,
   captions: true,
@@ -80,12 +88,12 @@ module.exports = {
         ] },
         { type: 'text', text: 'agent writes scene.js', x: 510, y: 515, size: 20, fill: C.dim, align: 'center', appear: { t: '@agent+0.3', effect: 'fade' } },
         { type: 'arrow', x1: 585, y1: 405, x2: 675, y2: 405, color: C.text, width: 4, appear: { t: '@io', effect: 'draw', dur: 0.4 } },
-        { type: 'box', x: 685, y: 370, w: 190, h: 70, rx: 14, text: 'render.js', size: 22, mono: true, fill: '#312e81', stroke: C.violet, textColor: C.text,
+        { type: 'box', x: 685, y: 370, w: 190, h: 70, rx: 14, text: 'render.js', size: 22, mono: true, fill: C.brandFill, stroke: C.violet, textColor: C.text,
           appear: { t: '@io+0.3', effect: 'pop' } },
         { type: 'arrow', x1: 885, y1: 405, x2: 975, y2: 405, color: C.text, width: 4, appear: { t: '@io+1.2', effect: 'draw', dur: 0.4 } },
         { type: 'group', x: 985, y: 345, appear: { t: '@io+1.5', effect: 'pop' }, children: [
           { type: 'rect', x: 0, y: 0, w: 170, h: 120, rx: 14, fill: C.greenFill, stroke: C.green, strokeWidth: 3 },
-          { type: 'polygon', points: [[68, 35], [68, 85], [110, 60]], fill: C.text },
+          { type: 'polygon', points: [[68, 35], [68, 85], [110, 60]], fill: C.green },
         ] },
         { type: 'text', text: 'video.mp4', x: 1070, y: 515, size: 20, mono: true, fill: C.dim, align: 'center', appear: { t: '@io+1.5', effect: 'fade' } },
       ],
@@ -164,15 +172,15 @@ module.exports = {
         title('Narration drives the timing'),
         { type: 'arrow', x1: AX, y1: AY, x2: 1170, y2: AY, color: C.dim, width: 2, head: 10, appear: { t: 0.3, effect: 'draw', dur: 0.6 } },
         { type: 'text', text: 'time', x: 1170, y: AY + 32, size: 16, fill: C.dim, align: 'right', appear: { t: 0.3, effect: 'fade' } },
-        { type: 'box', x: AX, y: AY - 60, w: 260, h: 44, rx: 8, text: 'line 1', size: 18, fill: '#1e3a5f', stroke: C.blue, textColor: C.text,
+        { type: 'box', x: AX, y: AY - 60, w: 260, h: 44, rx: 8, text: 'line 1', size: 18, fill: C.barFill, stroke: C.blue, textColor: C.text,
           appear: { t: '@clever', effect: 'pop' },
           keyframes: [{ t: '@shift+0.8', dur: 0.8, w: 400 }] },
         { type: 'group', x: 0, y: 0,
           keyframes: [{ t: '@shift+0.8', dur: 0.8, dx: 140 }],
           children: [
-            { type: 'box', x: AX + 280, y: AY - 60, w: 300, h: 44, rx: 8, text: "line 2  ·  cue: 'move'", size: 18, fill: '#1e3a5f', stroke: C.blue, textColor: C.text,
+            { type: 'box', x: AX + 280, y: AY - 60, w: 300, h: 44, rx: 8, text: "line 2  ·  cue: 'move'", size: 18, fill: C.barFill, stroke: C.blue, textColor: C.text,
               appear: { t: '@nodur', effect: 'pop' } },
-            { type: 'box', x: AX + 600, y: AY - 60, w: 240, h: 44, rx: 8, text: 'line 3', size: 18, fill: '#1e3a5f', stroke: C.blue, textColor: C.text,
+            { type: 'box', x: AX + 600, y: AY - 60, w: 240, h: 44, rx: 8, text: 'line 3', size: 18, fill: C.barFill, stroke: C.blue, textColor: C.text,
               appear: { t: '@nodur+0.4', effect: 'pop' } },
             { type: 'arrow', x1: AX + 280, y1: 230, x2: AX + 280, y2: AY - 70, color: C.yellow, width: 3, appear: { t: '@place+1', effect: 'draw', dur: 0.5 } },
             { type: 'text', text: '@move', x: AX + 280, y: 215, size: 22, mono: true, fill: C.yellow, align: 'center', appear: { t: '@place+1', effect: 'fade' } },
@@ -193,7 +201,7 @@ module.exports = {
         title('The toolkit'),
         { type: 'box', x: 120, y: 195, w: 110, h: 70, rx: 12, text: 'box', size: 20, fill: C.panel, stroke: C.brand, textColor: C.text,
           appear: { t: '@kinds+0.5', effect: 'pop' },
-          keyframes: [{ t: '@kf+0.3', dur: 0.6, fill: '#7c2d12', stroke: C.orange, scale: 1.15 }] },
+          keyframes: [{ t: '@kf+0.3', dur: 0.6, fill: C.orangeFill, stroke: C.orange, scale: 1.15 }] },
         { type: 'circle', cx: 420, cy: 230, r: 36, fill: C.blue, appear: { t: '@kinds+1', effect: 'pop' },
           keyframes: [{ t: '@kf+0.9', dur: 0.6, fill: C.green, r: 46 }] },
         { type: 'arrow', x1: 580, y1: 230, x2: 720, y2: 230, color: C.yellow, width: 4, appear: { t: '@kinds+1.6', effect: 'draw', dur: 0.4 },
@@ -254,8 +262,9 @@ module.exports = {
         { type: 'arrow', x1: 765, y1: 290, x2: 870, y2: 290, color: C.dim, width: 4, appear: { t: '@one+1.5', effect: 'draw', dur: 0.3 } },
         { type: 'box', x: 880, y: 250, w: 220, h: 80, rx: 16, text: 'video', size: 28, fill: C.greenFill, stroke: C.green, textColor: C.text, appear: { t: '@one+1.6', effect: 'pop' } },
         { type: 'box', x: 340, y: 420, w: 600, h: 64, rx: 32, text: 'github.com/gsush701-gif/vector-video', size: 24, mono: true,
-          fill: '#312e81', stroke: C.brand, textColor: C.text, appear: { t: '@gh', effect: 'pop' } },
+          fill: C.brandFill, stroke: C.brand, textColor: C.text, appear: { t: '@gh', effect: 'pop' } },
       ],
     },
   ],
+  };
 };

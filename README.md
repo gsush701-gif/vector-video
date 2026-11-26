@@ -49,6 +49,7 @@ Good for algorithm walkthroughs, bug explainers, architecture diagrams that buil
 - **Narration-driven timing**: cues like `@name`, `@name.end`, `@name+1.2`, `@end-1` and `50%`.
 - **Elements**: `rect`, `circle`, `line`, `arrow`, `path`, `polygon`, `text`, `box`, `code` panels with a moving highlight bar, `group`, and raw vector `svg`.
 - **Effects**: fade, pop, slide up, typewriter text, self-drawing lines and paths, plus keyframes for position, color, scale, rotation and more.
+- **Light or dark**: `theme: 'light'` gives a white background with matching text, box, code and caption colors; `--theme` switches any theme-aware script.
 - **Captions**: optional subtitles from the narration, with separate spoken and shown text (`say` / `caption`).
 - **Fast iteration**: `--timeline` prints when every line is spoken, `--stills` saves PNG previews, and speech is cached so visual re-renders take seconds.
 - **Natural offline voice**: [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) (Apache-2.0) runs on your CPU, with US and UK voices like `af_heart`, `am_michael` and `bf_emma`. The model downloads once (~92 MB).
@@ -86,6 +87,7 @@ node scripts/render.js <scene.json|scene.js> [out.mp4] [options]
   --no-audio         skip speech (lengths guessed from word count) for quick drafts
   --scale 0.5        render smaller, for fast drafts
   --tts <engine>     auto (default) | kokoro | system
+  --theme <name>     dark (default) | light
 ```
 
 ## Examples

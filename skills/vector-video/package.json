@@ -1,6 +1,6 @@
 {
   "name": "vector-video",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Turn a scene file into a narrated .mp4 where every visual is vector (SVG).",
   "private": true,
   "dependencies": {

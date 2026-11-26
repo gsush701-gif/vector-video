@@ -16,6 +16,7 @@
  *   --scale <n>       Render at n times the size (e.g. 0.5 for a fast draft).
  *   --timeline        Only print the scene/cue timing table.
  *   --tts <engine>    Speech engine: auto (default), kokoro or system. Overrides "tts" in the scene file.
+ *   --theme <name>    Color theme: dark (default) or light (white background). Overrides "theme" in the scene file.
  */
 const fs = require('fs');
 const os = require('os');
@@ -34,7 +35,7 @@ function need(mod) {
 
 // ---------------------------------------------------------------- args
 function parseArgs(argv) {
-  const a = { positional: [], stills: null, stillsDir: null, video: false, audio: true, scale: 1, timeline: false, tts: null };
+  const a = { positional: [], stills: null, stillsDir: null, video: false, audio: true, scale: 1, timeline: false, tts: null, theme: null };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--stills') a.stills = argv[++i];
@@ -44,30 +45,55 @@ function parseArgs(argv) {
     else if (v === '--scale') a.scale = parseFloat(argv[++i]);
     else if (v === '--timeline') a.timeline = true;
     else if (v === '--tts') a.tts = argv[++i];
+    else if (v === '--theme') a.theme = argv[++i];
     else if (v === '-h' || v === '--help') { a.help = true; }
     else a.positional.push(v);
   }
   return a;
 }
 
+// ---------------------------------------------------------------- themes
+// Default colors for everything the renderer draws on its own. Scene files can
+// also export a function: it receives { theme, palette } so its own colors can follow the theme.
+const THEMES = {
+  dark: {
+    background: '#0f172a', text: '#e2e8f0', dim: '#94a3b8', panel: '#1e293b', line: '#334155',
+    shape: '#38bdf8', boxFill: '#1e293b', boxStroke: '#94a3b8', codePanel: '#111827', codeBorder: '#334155',
+    highlight: '#facc15', highlightOpacity: 0.22, captionBg: '#000000', captionBgOpacity: 0.6, captionText: '#ffffff',
+    blue: '#60a5fa', green: '#22c55e', greenFill: '#14532d', red: '#ef4444', redFill: '#7f1d1d',
+    yellow: '#facc15', orange: '#fb923c', violet: '#a78bfa', brand: '#818cf8', brandFill: '#312e81',
+  },
+  light: {
+    background: '#ffffff', text: '#0f172a', dim: '#475569', panel: '#f1f5f9', line: '#cbd5e1',
+    shape: '#2563eb', boxFill: '#f8fafc', boxStroke: '#64748b', codePanel: '#f8fafc', codeBorder: '#cbd5e1',
+    highlight: '#facc15', highlightOpacity: 0.35, captionBg: '#0f172a', captionBgOpacity: 0.85, captionText: '#ffffff',
+    blue: '#2563eb', green: '#16a34a', greenFill: '#dcfce7', red: '#dc2626', redFill: '#fee2e2',
+    yellow: '#ca8a04', orange: '#ea580c', violet: '#7c3aed', brand: '#4f46e5', brandFill: '#e0e7ff',
+  },
+};
+
 // ---------------------------------------------------------------- spec loading
-function loadSpec(file) {
+function loadSpec(file, opts = {}) {
   const abs = path.resolve(file);
   let spec;
   if (/\.(c?js)$/i.test(abs)) {
     delete require.cache[abs];
     spec = require(abs);
-    if (typeof spec === 'function') spec = spec();
+    if (typeof spec === 'function') { const th = THEMES[opts.theme] ? opts.theme : 'dark'; spec = spec({ theme: th, palette: THEMES[th] }); }
   } else {
     spec = JSON.parse(fs.readFileSync(abs, 'utf8').replace(/^\uFEFF/, ''));
   }
   if (!spec || !Array.isArray(spec.scenes) || !spec.scenes.length) throw new Error('The scene file needs a non-empty "scenes" list.');
+  const themeName = String(opts.theme || spec.theme || 'dark').toLowerCase();
+  if (!THEMES[themeName]) throw new Error(`Unknown theme "${themeName}". Use dark or light.`);
+  const T = THEMES[themeName];
+  if (opts.theme) { delete spec.background; delete spec.color; } // the flag wins over colors baked into the file
   return Object.assign({
-    width: 1280, height: 720, fps: 30, background: '#0f172a',
-    font: 'Segoe UI', mono: 'Consolas', color: '#e2e8f0',
+    width: 1280, height: 720, fps: 30, background: T.background,
+    font: 'Segoe UI', mono: 'Consolas', color: T.text,
     tts: 'auto', voice: null, rate: 0, leadIn: 0.4, gap: 0.3, tail: 0.7, fade: 0.25,
     overlay: [], fonts: [],
-  }, spec);
+  }, spec, { theme: themeName, _t: T });
 }
 
 // ---------------------------------------------------------------- narration
@@ -433,11 +459,11 @@ function elementSvg(el, t, scene, spec) {
   let body = '';
   switch (p.type) {
     case 'rect':
-      body = `<rect${attrs(Object.assign({ x: p.x ?? 0, y: p.y ?? 0, width: Math.max(0, p.w ?? 0), height: Math.max(0, p.h ?? 0), rx: p.rx }, paintAttrs(p, '#334155')))}/>`; break;
+      body = `<rect${attrs(Object.assign({ x: p.x ?? 0, y: p.y ?? 0, width: Math.max(0, p.w ?? 0), height: Math.max(0, p.h ?? 0), rx: p.rx }, paintAttrs(p, spec._t.line)))}/>`; break;
     case 'circle':
-      body = `<circle${attrs(Object.assign({ cx: p.cx ?? 0, cy: p.cy ?? 0, r: Math.max(0, p.r ?? 10) }, paintAttrs(p, '#38bdf8')))}/>`; break;
+      body = `<circle${attrs(Object.assign({ cx: p.cx ?? 0, cy: p.cy ?? 0, r: Math.max(0, p.r ?? 10) }, paintAttrs(p, spec._t.shape)))}/>`; break;
     case 'ellipse':
-      body = `<ellipse${attrs(Object.assign({ cx: p.cx ?? 0, cy: p.cy ?? 0, rx: Math.max(0, p.rx ?? 10), ry: Math.max(0, p.ry ?? 10) }, paintAttrs(p, '#38bdf8')))}/>`; break;
+      body = `<ellipse${attrs(Object.assign({ cx: p.cx ?? 0, cy: p.cy ?? 0, rx: Math.max(0, p.rx ?? 10), ry: Math.max(0, p.ry ?? 10) }, paintAttrs(p, spec._t.shape)))}/>`; break;
     case 'line': {
       p._len = Math.hypot((p.x2 ?? 0) - (p.x1 ?? 0), (p.y2 ?? 0) - (p.y1 ?? 0)) || 1;
       body = `<line${attrs(Object.assign({ x1: p.x1 ?? 0, y1: p.y1 ?? 0, x2: p.x2 ?? 0, y2: p.y2 ?? 0 }, paintAttrs(Object.assign({}, p, { stroke: p.stroke ?? p.color ?? spec.color }), 'none')))}/>`; break;
@@ -454,16 +480,16 @@ function elementSvg(el, t, scene, spec) {
     }
     case 'path':
       if (p.draw != null) p._len = p.length ?? (el._len ??= pathLength(p.d));
-      body = `<path${attrs(Object.assign({ d: p.d }, paintAttrs(p, p.stroke ? 'none' : '#38bdf8')))}/>`; break;
+      body = `<path${attrs(Object.assign({ d: p.d }, paintAttrs(p, p.stroke ? 'none' : spec._t.shape)))}/>`; break;
     case 'polygon': case 'polyline': {
       const pts = (p.points || []).map((q) => (Array.isArray(q) ? q.map(num).join(',') : q)).join(' ');
-      body = `<${p.type}${attrs(Object.assign({ points: pts }, paintAttrs(p, p.type === 'polyline' ? 'none' : '#38bdf8')))}/>`; break;
+      body = `<${p.type}${attrs(Object.assign({ points: pts }, paintAttrs(p, p.type === 'polyline' ? 'none' : spec._t.shape)))}/>`; break;
     }
     case 'text':
       body = textSvg(p, spec); break;
     case 'box': {
       const x = p.x ?? 0, y = p.y ?? 0, w = p.w ?? 80, h = p.h ?? 80;
-      body = `<rect${attrs(Object.assign({ x, y, width: w, height: h, rx: p.rx ?? 10 }, paintAttrs(Object.assign({}, p, { stroke: p.stroke ?? '#94a3b8', strokeWidth: p.strokeWidth ?? 3 }), '#1e293b')))}/>`;
+      body = `<rect${attrs(Object.assign({ x, y, width: w, height: h, rx: p.rx ?? 10 }, paintAttrs(Object.assign({}, p, { stroke: p.stroke ?? spec._t.boxStroke, strokeWidth: p.strokeWidth ?? 3 }), spec._t.boxFill)))}/>`;
       if (p.text != null && p.text !== '') body += textSvg({ text: p.text, x: x + w / 2, y: y + h / 2, size: p.size ?? Math.round(h * 0.5), align: 'center', valign: 'middle', fill: p.textColor ?? spec.color, weight: p.weight ?? 'bold', mono: p.mono, font: p.font, reveal: p.reveal }, spec);
       break;
     }
@@ -471,9 +497,9 @@ function elementSvg(el, t, scene, spec) {
       const size = p.size ?? 26, lh = (p.lineHeight ?? 1.45) * size, x = p.x ?? 0, y = p.y ?? 0;
       const lines = p.lines || [];
       const w = p.w ?? 640;
-      if (p.panel !== false) body += `<rect${attrs({ x: x - 24, y: y - 20, width: w, height: lines.length * lh + 40, rx: 14, fill: p.panelColor ?? '#111827', stroke: '#334155', 'stroke-width': 2 })}/>`;
+      if (p.panel !== false) body += `<rect${attrs({ x: x - 24, y: y - 20, width: w, height: lines.length * lh + 40, rx: 14, fill: p.panelColor ?? spec._t.codePanel, stroke: spec._t.codeBorder, 'stroke-width': 2 })}/>`;
       const hl = [].concat(p.highlight ?? []).filter((v) => typeof v === 'number' && v >= 0);
-      for (const h of hl) body += `<rect${attrs({ x: x - 12, y: y + h * lh, width: w - 24, height: lh, rx: 6, fill: p.highlightColor ?? '#facc15', opacity: p.highlightOpacity ?? 0.22 })}/>`;
+      for (const h of hl) body += `<rect${attrs({ x: x - 12, y: y + h * lh, width: w - 24, height: lh, rx: 6, fill: p.highlightColor ?? spec._t.highlight, opacity: p.highlightOpacity ?? spec._t.highlightOpacity })}/>`;
       lines.forEach((ln, i) => {
         const o = typeof ln === 'string' ? { text: ln } : ln;
         body += textSvg({ text: o.text, x, y: y + i * lh + lh / 2, size, valign: 'middle', mono: true, fill: o.color ?? p.color ?? spec.color, weight: o.bold ? 'bold' : undefined, reveal: (p.reveal != null ? Math.max(0, Math.min(1, p.reveal * lines.length - i)) : undefined) }, spec);
@@ -516,8 +542,8 @@ function captionSvg(text, cap, spec) {
   const boxW = Math.min(W - 40, Math.max(...lines.map((l) => l.length)) * cw + padX * 2);
   const boxH = lines.length * lh + padY * 2;
   const y0 = (cap.y ?? H - 20) - boxH;
-  let s = `<rect${attrs({ x: (W - boxW) / 2, y: y0, width: boxW, height: boxH, rx: 10, fill: cap.background ?? '#000000', opacity: cap.backgroundOpacity ?? 0.6 })}/>`;
-  lines.forEach((l, i) => { s += textSvg({ text: l, x: W / 2, y: y0 + padY + lh * i + lh / 2, size, align: 'center', valign: 'middle', fill: cap.color ?? '#ffffff' }, spec); });
+  let s = `<rect${attrs({ x: (W - boxW) / 2, y: y0, width: boxW, height: boxH, rx: 10, fill: cap.background ?? spec._t.captionBg, opacity: cap.backgroundOpacity ?? spec._t.captionBgOpacity })}/>`;
+  lines.forEach((l, i) => { s += textSvg({ text: l, x: W / 2, y: y0 + padY + lh * i + lh / 2, size, align: 'center', valign: 'middle', fill: cap.color ?? spec._t.captionText }, spec); });
   return s;
 }
 
@@ -569,14 +595,14 @@ function printTimeline(spec) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || !args.positional.length) {
-    console.log('Usage: node render.js <scene.json|scene.js> [out.mp4] [--stills 3,2@1.5] [--video] [--no-audio] [--scale 0.5] [--timeline] [--tts auto|kokoro|system]');
+    console.log('Usage: node render.js <scene.json|scene.js> [out.mp4] [--stills 3,2@1.5] [--video] [--no-audio] [--scale 0.5] [--timeline] [--tts auto|kokoro|system] [--theme dark|light]');
     process.exit(args.help ? 0 : 1);
   }
   const { Resvg } = need('@resvg/resvg-js');
   const ffmpegPath = process.env.FFMPEG_PATH || need('ffmpeg-static');
   const specFile = args.positional[0];
   const out = path.resolve(args.positional[1] || specFile.replace(/\.(json|c?js)$/i, '') + '.mp4');
-  const spec = loadSpec(specFile);
+  const spec = loadSpec(specFile, args);
 
   await buildTimeline(spec, args, ffmpegPath);
   spec._overlayScene = { _dur: spec._total, _segs: [] };

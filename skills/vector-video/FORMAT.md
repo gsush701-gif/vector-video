@@ -1,11 +1,12 @@
 # Scene file format
 
-A scene file is JSON, or a JS module that exports the same object (or a function that returns it).
+A scene file is JSON, or a JS module that exports the same object (or a function that returns it). A function receives `{ theme, palette }`, the active theme's name and colors, so the file's own colors can follow `--theme`.
 
 ```js
 module.exports = {
   width: 1280, height: 720, fps: 30,      // defaults shown
-  background: '#0f172a',                  // any CSS color
+  theme: 'light',                         // 'dark' (default) or 'light' (white background); sets the default colors below
+  background: '#0f172a',                  // any CSS color (default comes from the theme)
   color: '#e2e8f0',                       // default text color
   font: 'Segoe UI', mono: 'Consolas',     // font families (Windows fonts are loaded automatically)
   fonts: [],                              // extra .ttf/.otf files to load
@@ -105,6 +106,30 @@ Every element can have:
 }
 ```
 
+## Themes
+
+`theme` sets every color the renderer picks on its own: the background, default text, box fill and border, code panel, highlight bar, caption bar and shape fill.
+
+| | dark (default) | light |
+| --- | --- | --- |
+| background | `#0f172a` | `#ffffff` |
+| text / dim | `#e2e8f0` / `#94a3b8` | `#0f172a` / `#475569` |
+| panel / lines | `#1e293b` / `#334155` | `#f1f5f9` / `#cbd5e1` |
+| green (fill) | `#22c55e` (`#14532d`) | `#16a34a` (`#dcfce7`) |
+| red (fill) | `#ef4444` (`#7f1d1d`) | `#dc2626` (`#fee2e2`) |
+| yellow / orange / blue / violet | `#facc15` / `#fb923c` / `#60a5fa` / `#a78bfa` | `#ca8a04` / `#ea580c` / `#2563eb` / `#7c3aed` |
+
+Colors you write yourself are not changed. To make a file work in both themes, export a function and take colors from `palette`:
+
+```js
+module.exports = ({ palette: P }) => ({
+  theme: 'light',
+  scenes: [{ narration: ['Hello.'], elements: [
+    { type: 'box', text: 'ok', x: 560, y: 300, w: 160, h: 80, fill: P.greenFill, stroke: P.green },
+  ] }],
+});
+```
+
 ## Voices
 
 Two speech engines, both offline:
@@ -127,6 +152,7 @@ node <SKILL_DIR>/scripts/render.js <scene.json|scene.js> [out.mp4] [options]
   --no-audio         no speech (lengths guessed from word count) - quick drafts
   --scale 0.5        render smaller, for fast drafts
   --tts <engine>     auto | kokoro | system (overrides the scene file)
+  --theme <name>     dark | light (overrides the scene file's theme, background and color)
 ```
 
 Speech audio is cached in the system temp folder (`vector-video-cache`), so re-renders after visual changes are fast.
