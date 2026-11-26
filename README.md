@@ -99,6 +99,7 @@ node scripts/render.js <scene.json|scene.js> [out.mp4] [options]
 | [`strstr.js`](skills/vector-video/examples/strstr.js) | A bug explainer: why a naive substring search fails, then the fix |
 | [`mcp-explainer.js`](skills/vector-video/examples/mcp-explainer.js) | The sample above: a 6-scene concept explainer with diagrams, a sequence chart and a JSON code panel |
 | [`plugin-tour.js`](skills/vector-video/examples/plugin-tour.js) | The tour above: the plugin explaining itself, with a pipeline, a timing diagram and a toolkit showcase |
+| [`light-theme.js`](skills/vector-video/examples/light-theme.js) | A 48-second explainer of the light theme, rendered in it: a frame that changes from dark to light, and one script in both themes |
 
 ## Tips
 

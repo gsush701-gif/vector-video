@@ -79,7 +79,14 @@ function loadSpec(file, opts = {}) {
   if (/\.(c?js)$/i.test(abs)) {
     delete require.cache[abs];
     spec = require(abs);
-    if (typeof spec === 'function') { const th = THEMES[opts.theme] ? opts.theme : 'dark'; spec = spec({ theme: th, palette: THEMES[th] }); }
+    if (typeof spec === 'function') {
+      const build = spec;
+      const th = THEMES[opts.theme] ? opts.theme : 'dark';
+      spec = build({ theme: th, palette: THEMES[th] });
+      // The script picked its own theme (e.g. theme: 'light'): build it again with that palette.
+      const own = spec && String(spec.theme || '').toLowerCase();
+      if (!opts.theme && THEMES[own] && own !== th) spec = build({ theme: own, palette: THEMES[own] });
+    }
   } else {
     spec = JSON.parse(fs.readFileSync(abs, 'utf8').replace(/^\uFEFF/, ''));
   }
